@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+
+# 快取與執行紀錄(只在本機用)
+data/logs/
+data/*.log
+data/*.tmp
+data/*.js.tmp
+data/cb_hist.json
+data/stk_hist.json
+data/stock_market.json
+data/treasury.json
+data/treasury_progress.json
+data/*.json
+# 網頁資料由 scripts/publish.ps1 推到 gh-pages 分支,main 不放
+data/*.js
+
+# 憑證、金鑰一律不上傳
+*.pfx
+*.p12
+*.pem
+.env
+
+# 本機工具設定
+.claude/
