@@ -62,6 +62,13 @@
   所以是「至少」值;沒申報顯示「未達申報門檻」。快取 `data\treasury_progress.json`,3 小時內不重抓,每家間隔 2 秒。
 - 表頭固定:頁面 body 用 flex 100dvh,只有 `.wrap` 捲動,`th` 用 sticky(cb-breakout、cb-treasury 相同)。
 
+## GitHub(公開)
+- 儲存庫:https://github.com/a0926155686ann/cb-monitor(main = 程式碼;`data/*.js`、快取不進 main)
+- 網址:https://a0926155686ann.github.io/cb-monitor/ (GitHub Pages,來源 gh-pages 分支)
+- `scripts\publish.ps1`:把 *.html + data\cb_*.js 以單一 commit 強制推到 gh-pages(不留歷史)。
+  排程 `--publish-every 600` 盤中每 10 分鐘發布一次(Pages 約每小時 10 次建置上限),收盤最後一輪再發布。
+- commit 身分用 GitHub noreply 信箱;公開儲存庫,**任何檔案都不能放帳號、密碼、憑證**。
+
 ## 篩選邏輯(目前版本)
 1. 取得所有有已發行 CB 的標的股清單。
 2. 盤中現價 > 前五個交易日最高價 → 視為「突破五日新高」。
