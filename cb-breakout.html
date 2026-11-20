@@ -44,6 +44,44 @@ tr.lock td{background:var(--lock)}
 .row{display:grid;grid-template-columns:110px 1fr 60px;align-items:center;gap:8px;margin:4px 0;font-size:13px}
 .bar{height:14px;background:var(--up);border-radius:3px}
 .bar.b2{background:var(--ac)}
+.mOnly{display:none!important}
+/* ===== 手機版(≤640px):摘要縮小、篩選可收合、表頭變排序按鈕、每列變卡片 ===== */
+@media (max-width:640px){
+ body{display:block;height:auto;font-size:14px}
+ .top{flex-wrap:wrap;padding:0;gap:0}
+ .tabs{flex:1 1 100%}
+ .tabs span,.tabs a{padding:10px 11px!important;font-size:14px}
+ .seg{margin:6px 8px}.seg button{padding:4px 14px;font-size:13px}
+ .cards{grid-template-columns:repeat(4,1fr);gap:6px;padding:8px}
+ .card{padding:6px 8px;border-radius:6px}
+ .card small{font-size:11px;white-space:nowrap}.card b{font-size:17px}
+ .card:last-child{grid-column:1/-1;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+ .card:last-child b{font-size:13px!important;display:inline}.card:last-child b br{display:none}
+ .mOnly{display:inline-block!important}
+ .tools{gap:8px;padding:0 8px 8px}
+ .tools>label:not(.keep),#impBtn{display:none}
+ .tools.open>label,.tools.open #impBtn{display:inline-flex;align-items:center;gap:4px}
+ .tools .keep{flex:1;display:flex;align-items:center;gap:4px;white-space:nowrap}.tools .keep input{flex:1;min-width:0;width:100%}
+ .card:last-child small{margin-left:4px}
+ #stat{font-size:12px}
+ .wrap{overflow:visible}
+ table,tbody{display:block;min-width:0}
+ thead{display:block;position:sticky;top:0;z-index:3;background:var(--bg);padding:6px 8px;border-bottom:1px solid var(--bd)}
+ thead tr{display:flex;gap:6px;overflow-x:auto}
+ th{position:static;box-shadow:none;border:1px solid var(--bd);border-radius:14px;padding:3px 10px;font-size:12px;font-weight:normal}
+ tbody tr{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 10px;margin:8px;padding:10px 12px;background:var(--card);border:1px solid var(--bd);border-radius:10px}
+ tr.lock{background:var(--lock)} tr.lock td{background:none}
+ td{border:0;padding:0;text-align:left}
+ td[data-l]::before{content:attr(data-l);display:block;font-size:11px;color:var(--mu);font-weight:normal}
+ td.stock{grid-column:1/3;order:-2;font-size:16px;font-weight:600}
+ td.stock br{display:none}td.stock .ind{font-size:12px;font-weight:normal;margin-left:6px}
+ td.stock::before{display:none}
+ .badge{position:static;margin-right:6px;vertical-align:2px}
+ td.stars{order:-1;text-align:right;font-size:15px}td.stars::before{display:none}
+ td.big{font-size:17px;font-weight:600}
+ td[colspan]{grid-column:1/-1;text-align:center}
+ .row{grid-template-columns:90px 1fr 54px}
+}
 </style>
 </head>
 <body>
@@ -58,7 +96,8 @@ tr.lock td{background:var(--lock)}
 <div class="card"><small>四星以上</small><b id="c4">0</b></div>
 <div class="card"><small>資料時間</small><b id="c5" style="font-size:15px">範例資料</b></div>
 </div>
-<div class="tools">
+<div class="tools" id="tools">
+<button id="fBtn" class="mOnly" type="button">篩選 ▾</button>
 <label>最少燈數 <select id="minStar"><option value="0">全部</option><option>3</option><option>4</option><option>5</option></select></label>
 <label>剩餘天數 ≥ <select id="minDays"><option value="0">不限</option><option>90</option><option>180</option><option>365</option></select></label>
 <label><input type="checkbox" id="onlyBrk" checked> 只顯示突破五日新高</label>
@@ -66,7 +105,7 @@ tr.lock td{background:var(--lock)}
 <label><input type="checkbox" id="auto" checked> 自動更新(30 秒)</label>
 <label>產業 <select id="indSel"><option value="">全部</option></select></label>
 <label>發行券商 <select id="uwSel"><option value="">全部</option></select></label>
-<label>搜尋 <input id="q" placeholder="代碼/名稱/產業"></label>
+<label class="keep">搜尋 <input id="q" placeholder="代碼/名稱/產業"></label>
 <button id="impBtn">匯入資料</button>
 <span id="stat"></span>
 </div>
@@ -113,9 +152,9 @@ $(el).innerHTML=items.length?items.map(([n,v,s])=>`<div class="row"><span>${n}</
 function go(){const r=rows();
 $("b").innerHTML=r.map(d=>`<tr class="${d.stop?"lock":""}">
 <td class="stars" title="${d.why||""}">${"★".repeat(Math.round(d.stars))}</td>
-<td class="stock" title="${d.hi5?"前五日最高 "+d.hi5:""}">${d.stop?'<span class="badge">停</span>':""}${d.name}<br>${d.code}${d.ind?`<br><span class="ind">${d.ind}</span>`:""}</td>
-<td class="${d.chg>0?"up":d.chg<0?"dn":""}">${f(d.chg)}%</td><td>${f(d.price)}</td>
-<td>${d.cb}<br>${d.cbcode||""}</td><td class="${d.cbp?"":"mu"}">${f(d.cbp)}</td><td>${f(d.mv)}</td><td>${d.days}</td></tr>`).join("")||'<tr><td colspan="8" class="mu">沒有符合條件的資料</td></tr>';
+<td class="stock" title="${d.hi5?"前五日最高 "+d.hi5:""}">${d.stop?'<span class="badge">停</span>':""}${d.name}<br> ${d.code}${d.ind?`<br><span class="ind">${d.ind}</span>`:""}</td>
+<td data-l="漲幅" class="big ${d.chg>0?"up":d.chg<0?"dn":""}">${f(d.chg)}%</td><td data-l="現股現價" class="big">${f(d.price)}</td>
+<td data-l="CB">${d.cb}<br> ${d.cbcode||""}</td><td data-l="CB價" class="${d.cbp?"":"mu"}">${f(d.cbp)}</td><td data-l="市值">${f(d.mv)}</td><td data-l="剩餘天數">${d.days}</td></tr>`).join("")||'<tr><td colspan="8" class="mu">沒有符合條件的資料</td></tr>';
 const S=[...new Map(r.map(d=>[d.code,d])).values()];
 $("c1").textContent=r.length;$("c2").textContent=S.length;
 const avg=S.length?S.reduce((s,d)=>s+d.chg,0)/S.length:0;$("c3").textContent=f(avg)+"%";
@@ -126,6 +165,7 @@ const ic={};S.forEach(d=>ic[d.ind||"未分類"]=(ic[d.ind||"未分類"]||0)+1);
 bars("a3",Object.entries(ic).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v,v+" 檔"]),"b2")}
 ["minStar","minDays","hideZero","onlyBrk","indSel","uwSel"].forEach(i=>$(i).onchange=go);$("q").oninput=go;
 document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x===b));$("list").style.display=b.dataset.v==="list"?"":"none";$("ana").style.display=b.dataset.v==="ana"?"block":"none"});
+$("fBtn").onclick=()=>{const t=$("tools");t.classList.toggle("open");$("fBtn").textContent=t.classList.contains("open")?"篩選 ▴":"篩選 ▾"};
 $("impBtn").onclick=()=>{const s=$("imp").style;s.display=s.display==="block"?"none":"block"};
 $("file").onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>$("csv").value=rd.result;rd.readAsText(fl,"utf-8")};
 $("load").onclick=()=>{try{const d=parse($("csv").value);if(!d.length)throw 0;D=d;$("c5").textContent=new Date().toLocaleString("zh-TW",{hour12:false});$("msg").textContent=`已載入 ${d.length} 筆`;go()}catch(e){$("msg").textContent="格式有誤,請確認標題列"}};
