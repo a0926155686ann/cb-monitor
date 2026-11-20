@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>發債突破</title>
+<style>
+:root{--bg:#000;--hd:#1c2230;--card:#11151c;--tx:#eef1f5;--mu:#9aa5b5;--bd:#2a2f38;--st:#e5322d;--up:#ff4d4f;--dn:#22c55e;--ind:#1fa6d6;--lock:#2e0f0d;--ac:#2b8be0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f4f5f7;--hd:#e6e9ee;--card:#fff;--tx:#1b1f24;--mu:#5d6773;--bd:#d9dde3;--lock:#fde8e6;--ind:#0b7fae;--up:#d92d20;--dn:#15803d;color-scheme:light}}
+:root[data-theme="light"]{--bg:#f4f5f7;--hd:#e6e9ee;--card:#fff;--tx:#1b1f24;--mu:#5d6773;--bd:#d9dde3;--lock:#fde8e6;--ind:#0b7fae;--up:#d92d20;--dn:#15803d;color-scheme:light}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.35 -apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+ display:flex;flex-direction:column;height:100vh;height:100dvh}
+/* 上方卡片與篩選固定,只有表格區捲動,表頭 sticky */
+.top,.cards,.tools,#imp{flex:none}
+.top{display:flex;align-items:center;background:var(--hd);padding:0 8px;gap:8px}
+.tabs{display:flex;gap:2px;overflow-x:auto;flex:1}
+.tabs span{padding:12px 14px;white-space:nowrap;color:var(--mu)}
+.tabs .on{color:var(--tx);text-decoration:underline;background:var(--bg)}
+.seg{display:flex;border:1px solid var(--ac);border-radius:4px;overflow:hidden;flex:none}
+.seg button{background:none;border:0;color:var(--tx);padding:6px 16px;font:inherit;cursor:pointer}
+.seg .on{background:var(--ac);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;padding:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+.card b{display:block;font-size:22px}.card small{color:var(--mu)}
+.tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:0 12px 10px;color:var(--mu);font-size:13px}
+.tools select,.tools input,.tools button{background:var(--hd);color:var(--tx);border:1px solid var(--bd);border-radius:4px;padding:4px 8px;font:inherit}
+.tools button{cursor:pointer}
+.wrap{flex:1;min-height:0;overflow:auto}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:820px}
+th{background:var(--hd);padding:12px 8px;font-weight:600;cursor:pointer;white-space:nowrap;position:sticky;top:0;z-index:2;box-shadow:0 1px 0 var(--bd)}
+td{text-align:center;padding:8px;border-bottom:1px solid var(--bd)}
+tr.lock td{background:var(--lock)}
+.stars{color:var(--st);letter-spacing:1px;font-size:18px;white-space:nowrap}
+.stock{position:relative;line-height:1.3}
+.badge{position:absolute;left:8%;top:4px;background:var(--st);color:#fff;font-size:12px;padding:0 4px;border-radius:2px}
+.ind{color:var(--ind)}.up{color:var(--up)}.dn{color:var(--dn)}.mu{color:var(--mu)}
+#imp{display:none;padding:0 12px 12px}
+#imp textarea{width:100%;box-sizing:border-box;min-height:140px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:8px;font:13px monospace}
+#imp code{background:var(--hd);padding:2px 6px;border-radius:4px;font-size:12px;overflow-wrap:anywhere}
+#ana{display:none;padding:0 12px 16px;flex:1;min-height:0;overflow:auto}
+.chart{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:12px}
+.chart h3{margin:0 0 8px;font-size:15px}
+.row{display:grid;grid-template-columns:110px 1fr 60px;align-items:center;gap:8px;margin:4px 0;font-size:13px}
+.bar{height:14px;background:var(--up);border-radius:3px}
+.bar.b2{background:var(--ac)}
+.mOnly{display:none!important}
+/* ===== 手機版(≤640px):摘要縮小、篩選可收合、表頭變排序按鈕、每列變卡片 ===== */
+@media (max-width:640px){
+ body{display:block;height:auto;font-size:14px}
+ .top{flex-wrap:wrap;padding:0;gap:0}
+ .tabs{flex:1 1 100%}
+ .tabs span,.tabs a{padding:10px 11px!important;font-size:14px}
+ .seg{margin:6px 8px}.seg button{padding:4px 14px;font-size:13px}
+ .cards{grid-template-columns:repeat(4,1fr);gap:6px;padding:8px}
+ .card{padding:6px 8px;border-radius:6px}
+ .card small{font-size:11px;white-space:nowrap}.card b{font-size:17px}
+ .card:last-child{grid-column:1/-1;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+ .card:last-child b{font-size:13px!important;display:inline}.card:last-child b br{display:none}
+ .mOnly{display:inline-block!important}
+ .tools{gap:8px;padding:0 8px 8px}
+ .tools>label:not(.keep),#impBtn{display:none}
+ .tools.open>label,.tools.open #impBtn{display:inline-flex;align-items:center;gap:4px}
+ .tools .keep{flex:1;display:flex;align-items:center;gap:4px;white-space:nowrap}.tools .keep input{flex:1;min-width:0;width:100%}
+ .card:last-child small{margin-left:4px}
+ #stat{font-size:12px}
+ .wrap{overflow:visible}
+ table,tbody{display:block;min-width:0}
+ thead{display:block;position:sticky;top:0;z-index:3;background:var(--bg);padding:6px 8px;border-bottom:1px solid var(--bd)}
+ thead tr{display:flex;gap:6px;overflow-x:auto}
+ th{position:static;box-shadow:none;border:1px solid var(--bd);border-radius:14px;padding:3px 10px;font-size:12px;font-weight:normal}
+ tbody tr{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 10px;margin:8px;padding:10px 12px;background:var(--card);border:1px solid var(--bd);border-radius:10px}
+ tr.lock{background:var(--lock)} tr.lock td{background:none}
+ td{border:0;padding:0;text-align:left}
+ td[data-l]::before{content:attr(data-l);display:block;font-size:11px;color:var(--mu);font-weight:normal}
+ td.stock{grid-column:1/3;order:-2;font-size:16px;font-weight:600}
+ td.stock br{display:none}td.stock .ind{font-size:12px;font-weight:normal;margin-left:6px}
+ td.stock::before{display:none}
+ .badge{position:static;margin-right:6px;vertical-align:2px}
+ td.stars{order:-1;text-align:right;font-size:15px}td.stars::before{display:none}
+ td.big{font-size:17px;font-weight:600}
+ td[colspan]{grid-column:1/-1;text-align:center}
+ .row{grid-template-columns:90px 1fr 54px}
+}
+</style>
+</head>
+<body>
+<div class="top">
+<div class="tabs"><span>漲幅排序</span><span>CB套利</span><span class="on">發債突破</span><a href="cb-quotes.html" style="padding:12px 14px;white-space:nowrap;color:var(--mu);text-decoration:none">可轉債</a><span>高殖發債</span><span>動態避險</span><a href="cb-treasury.html" style="padding:12px 14px;white-space:nowrap;color:var(--mu);text-decoration:none">發債庫藏</a><span>發債籌碼</span><span>發債特價好股</span><span>發債回支撐</span></div>
+<div class="seg"><button class="on" data-v="list">列表</button><button data-v="ana">分析</button></div>
+</div>
+<div class="cards">
+<div class="card"><small>符合 CB 檔數</small><b id="c1">0</b></div>
+<div class="card"><small>現股檔數</small><b id="c2">0</b></div>
+<div class="card"><small>平均漲幅</small><b id="c3" class="up">0%</b></div>
+<div class="card"><small>四星以上</small><b id="c4">0</b></div>
+<div class="card"><small>資料時間</small><b id="c5" style="font-size:15px">範例資料</b></div>
+</div>
+<div class="tools" id="tools">
+<button id="fBtn" class="mOnly" type="button">篩選 ▾</button>
+<label>最少燈數 <select id="minStar"><option value="0">全部</option><option>3</option><option>4</option><option>5</option></select></label>
+<label>剩餘天數 ≥ <select id="minDays"><option value="0">不限</option><option>90</option><option>180</option><option>365</option></select></label>
+<label><input type="checkbox" id="onlyBrk" checked> 只顯示突破五日新高</label>
+<label><input type="checkbox" id="hideZero"> 隱藏 CB 無成交</label>
+<label><input type="checkbox" id="auto" checked> 自動更新(30 秒)</label>
+<label>產業 <select id="indSel"><option value="">全部</option></select></label>
+<label>發行券商 <select id="uwSel"><option value="">全部</option></select></label>
+<label class="keep">搜尋 <input id="q" placeholder="代碼/名稱/產業"></label>
+<button id="impBtn">匯入資料</button>
+<span id="stat"></span>
+</div>
+<div id="imp">
+<p class="mu">貼上 CSV(第一列為標題),或選擇檔案。標題欄位:<br><code>燈數,名稱,代碼,產業,漲幅,現價,CB名稱,CB代碼,CB價,市值,剩餘天數,停</code><br>「停」欄填 1 代表有停標記。</p>
+<input type="file" id="file" accept=".csv,.txt">
+<textarea id="csv"></textarea>
+<div class="tools" style="padding:8px 0 0"><button id="load">載入</button><button id="reset">還原範例</button><span id="msg"></span></div>
+</div>
+<div id="list" class="wrap"><table><thead><tr id="h"></tr></thead><tbody id="b"></tbody></table></div>
+<div id="ana">
+<div class="chart"><h3>漲幅排行(依現股)</h3><div id="a1"></div></div>
+<div class="chart"><h3>CB 價格(有成交者)</h3><div id="a2"></div></div>
+<div class="chart"><h3>產業分布</h3><div id="a3"></div></div>
+</div>
+<script>
+const cols=[["stars","符合燈數"],["name","現股"],["chg","漲幅"],["price","現股現價"],["cb","CB"],["cbp","CB價"],["mv","市值"],["days","剩餘天數"]];
+const SAMPLE=`燈數,名稱,代碼,產業,漲幅,現價,CB名稱,CB代碼,CB價,市值,剩餘天數,停
+3,高力,8996,散熱模組,4.79,1530,高力五,89965,121.5,92.39,1795,1
+3,高力,8996,散熱模組,4.79,1530,高力六,89966,127,93.58,1805,1
+4,旺矽,6223,IC封裝測試設備,8.26,4850,旺矽六,62236,124,78.2,1676,0
+4,華固,2548,營造工程,0.95,95.4,華固三,25483,0,85.56,1055,0
+3,華固,2548,營造工程,0.95,95.4,華固四,25484,0,86.57,1071,0
+3,三貝德,8489,文化創意,1.4,21.8,三貝德一,84891,0,78.14,392,0
+4,碩天,3617,電源供應器,3.18,276,碩天三,36173,118.65,100.62,582,0
+3,慶豐富,9935,家居用品,2.07,19.75,慶豐富三,99353,0,65.4,47,0
+4,正達,3149,玻璃,1.32,69.1,正達四,31494,112.7,101.47,1023,1
+4,昇達科,3491,通信網路,8.01,1550,昇達科三,34913,124,87.15,1670,0`;
+const K={"燈數":"stars","名稱":"name","代碼":"code","產業":"ind","漲幅":"chg","現價":"price","CB名稱":"cb","CB代碼":"cbcode","CB價":"cbp","市值":"mv","剩餘天數":"days","停":"stop"};
+const NUM=["stars","chg","price","cbp","mv","days","stop"];
+function parse(t){const L=t.trim().split(/\r?\n/).filter(x=>x.trim());const hd=L.shift().split(",").map(s=>K[s.trim().replace(/%/g,"")]);
+return L.map(l=>{const v=l.split(",");const o={};hd.forEach((k,i)=>{if(k)o[k]=NUM.includes(k)?parseFloat(String(v[i]).replace(/[%,]/g,""))||0:(v[i]||"").trim()});return o}).filter(o=>o.name||o.code)}
+let D=parse(SAMPLE),sk="stars",dir=-1;
+const $=id=>document.getElementById(id),f=v=>(+v).toFixed(2);
+cols.forEach(([k,t])=>{const th=document.createElement("th");th.textContent=t;th.onclick=()=>{dir=sk===k?-dir:-1;sk=k;go()};$("h").appendChild(th)});
+function fillSel(id,vals,none){const el=$(id),cur=el.value,cnt={};vals.forEach(v=>{v=(v||"").trim()||none;cnt[v]=(cnt[v]||0)+1});
+const o=Object.entries(cnt).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"zh-Hant")),sig=o.map(x=>x.join(":")).join("|");if(el.dataset.sig===sig)return;el.dataset.sig=sig;
+el.innerHTML='<option value="">全部</option>'+o.map(([v,n])=>`<option value="${v}">${v} (${n})</option>`).join("");el.value=cnt[cur]?cur:""}
+function rows(){const m=+$("minStar").value,md=+$("minDays").value,hz=$("hideZero").checked,q=$("q").value.trim(),ob=$("onlyBrk").checked;
+fillSel("indSel",D.map(d=>d.ind),"未分類");fillSel("uwSel",D.map(d=>d.uw),"無");const is=$("indSel").value,us=$("uwSel").value;
+return D.filter(d=>(!ob||d.breakout!==false)&&(!is||((d.ind||"").trim()||"未分類")===is)&&(!us||((d.uw||"").trim()||"無")===us)&&d.stars>=m&&d.days>=md&&(!hz||d.cbp>0)&&(!q||[d.code,d.name,d.cb,d.ind].some(x=>(x||"").includes(q)))).sort((a,b)=>(a[sk]>b[sk]?1:a[sk]<b[sk]?-1:0)*dir)}
+function bars(el,items,cls){const mx=Math.max(...items.map(i=>Math.abs(i[1])),1);
+$(el).innerHTML=items.length?items.map(([n,v,s])=>`<div class="row"><span>${n}</span><div class="bar ${cls||""}" style="width:${Math.max(2,Math.abs(v)/mx*100)}%"></div><span>${s}</span></div>`).join(""):'<p class="mu">無資料</p>'}
+function go(){const r=rows();
+$("b").innerHTML=r.map(d=>`<tr class="${d.stop?"lock":""}">
+<td class="stars" title="${d.why||""}">${"★".repeat(Math.round(d.stars))}</td>
+<td class="stock" title="${d.hi5?"前五日最高 "+d.hi5:""}">${d.stop?'<span class="badge">停</span>':""}${d.name}<br> ${d.code}${d.ind?`<br><span class="ind">${d.ind}</span>`:""}</td>
+<td data-l="漲幅" class="big ${d.chg>0?"up":d.chg<0?"dn":""}">${f(d.chg)}%</td><td data-l="現股現價" class="big">${f(d.price)}</td>
+<td data-l="CB">${d.cb}<br> ${d.cbcode||""}</td><td data-l="CB價" class="${d.cbp?"":"mu"}">${f(d.cbp)}</td><td data-l="市值">${f(d.mv)}</td><td data-l="剩餘天數">${d.days}</td></tr>`).join("")||'<tr><td colspan="8" class="mu">沒有符合條件的資料</td></tr>';
+const S=[...new Map(r.map(d=>[d.code,d])).values()];
+$("c1").textContent=r.length;$("c2").textContent=S.length;
+const avg=S.length?S.reduce((s,d)=>s+d.chg,0)/S.length:0;$("c3").textContent=f(avg)+"%";
+$("c4").textContent=r.filter(d=>d.stars>=4).length;$("stat").textContent=`顯示 ${r.length} 筆`;
+bars("a1",S.sort((a,b)=>b.chg-a.chg).map(d=>[d.name,d.chg,f(d.chg)+"%"]));
+bars("a2",r.filter(d=>d.cbp>0).sort((a,b)=>b.cbp-a.cbp).map(d=>[d.cb,d.cbp,f(d.cbp)]),"b2");
+const ic={};S.forEach(d=>ic[d.ind||"未分類"]=(ic[d.ind||"未分類"]||0)+1);
+bars("a3",Object.entries(ic).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v,v+" 檔"]),"b2")}
+["minStar","minDays","hideZero","onlyBrk","indSel","uwSel"].forEach(i=>$(i).onchange=go);$("q").oninput=go;
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x===b));$("list").style.display=b.dataset.v==="list"?"":"none";$("ana").style.display=b.dataset.v==="ana"?"block":"none"});
+$("fBtn").onclick=()=>{const t=$("tools");t.classList.toggle("open");$("fBtn").textContent=t.classList.contains("open")?"篩選 ▴":"篩選 ▾"};
+$("impBtn").onclick=()=>{const s=$("imp").style;s.display=s.display==="block"?"none":"block"};
+$("file").onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>$("csv").value=rd.result;rd.readAsText(fl,"utf-8")};
+$("load").onclick=()=>{try{const d=parse($("csv").value);if(!d.length)throw 0;D=d;$("c5").textContent=new Date().toLocaleString("zh-TW",{hour12:false});$("msg").textContent=`已載入 ${d.length} 筆`;go()}catch(e){$("msg").textContent="格式有誤,請確認標題列"}};
+$("reset").onclick=()=>{D=parse(SAMPLE);$("c5").textContent="範例資料";$("msg").textContent="已還原";go()};
+// 讀取 scripts\cb_quotes.py 產生的即時資料(data/cb_breakout.js);讀不到就維持範例資料
+let LIVE=false;
+function loadLive(){const s=document.createElement("script");s.src="data/cb_breakout.js?t="+Date.now();
+s.onload=()=>{const L=window.CB_BREAKOUT;if(L&&L.rows){D=L.rows;LIVE=true;const d=new Date(L.updated.replace(" ","T")),n=new Date(),hm=d.getHours()*100+d.getMinutes(),live=d.toDateString()===n.toDateString()&&d.getDay()>=1&&d.getDay()<=5&&hm>=900&&hm<=1330&&(n-d)<5*60e3;$("c5").innerHTML=L.updated+(live?'<br><small class="up">● 盤中即時</small>':'<br><small>已收盤／非盤中</small>');go()}s.remove()};
+s.onerror=()=>{s.remove();if(!LIVE)$("c5").textContent="範例資料(尚未產生即時資料)"};document.head.appendChild(s)}
+setInterval(()=>{if($("auto").checked)loadLive()},30000);
+go();loadLive();
+</script>
+</body>
+</html>
