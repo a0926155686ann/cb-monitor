@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>可轉債報價</title>
+<style>
+:root{--bg:#000;--hd:#0d1a5c;--hdtx:#7fb2ff;--bar:#111;--tx:#f2f2f2;--mu:#8a93a3;--bd:#262b36;--up:#ff3b3b;--dn:#22d14c;--eq:#f2f2f2;--sel:#1b2a4a;--ac:#ffb000;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.3 "Microsoft JhengHei","Noto Sans TC","PingFang TC",sans-serif;
+ display:flex;flex-direction:column;height:100vh;height:100dvh}
+.top,.tools,#colbox{flex:none}
+.top{display:flex;align-items:center;gap:2px;background:linear-gradient(#222,#000);border-bottom:1px solid #333;padding:0 6px;overflow-x:auto}
+.top a{color:#ddd;text-decoration:none;padding:7px 12px;white-space:nowrap;border-right:1px solid #333;font-size:17px}
+.top a.on{color:var(--ac);background:#1a1a1a}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:6px 8px;background:var(--bar);font-size:13px;color:var(--mu)}
+.tools input,.tools select,.tools button{background:#1c1c1c;color:var(--tx);border:1px solid #444;border-radius:3px;padding:3px 7px;font:inherit}
+.tools button{cursor:pointer}
+.tools .sp{flex:1}
+#upd b{color:var(--tx);font-weight:normal}
+#colbox{display:none;flex-wrap:wrap;gap:4px 14px;padding:8px;background:#0b0b0b;border-bottom:1px solid #333;font-size:13px}
+#colbox label{white-space:nowrap}
+.wrap{flex:1;min-height:0;overflow:auto}
+/* 第一欄(商品)左右捲動時固定 */
+th:first-child,td:first-child{position:sticky;left:0}
+td:first-child{background:var(--bg);z-index:1;box-shadow:1px 0 0 #333}
+th:first-child{z-index:3}
+table{border-collapse:collapse;width:max-content;min-width:100%}
+th{position:sticky;top:0;z-index:1;background:var(--hd);color:var(--hdtx);font-weight:normal;padding:4px 8px;border-right:1px solid #2b3a8a;white-space:nowrap;cursor:pointer;user-select:none;text-align:right}
+th.l,td.l{text-align:left}
+th .ar{color:var(--ac);font-size:11px}
+td{padding:2px 8px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;border-bottom:1px solid #111;font-size:17px;font-weight:600}
+td.l{font-weight:normal}
+td.code{color:#cfcfcf;font-weight:normal;font-size:15px}
+tr:hover td{background:var(--sel)}
+.up{color:var(--up)}.dn{color:var(--dn)}.eq{color:var(--eq)}.mu{color:var(--mu);font-weight:normal}
+.rb{display:flex;width:120px;height:14px;background:#333;margin-left:auto}
+.rb i{display:block;height:100%}
+.rb .o{background:var(--up)}.rb .n{background:var(--dn)}
+.empty{padding:40px;text-align:center;color:var(--mu)}
+.empty code{background:#1c1c1c;padding:2px 6px;border-radius:3px;color:var(--tx)}
+.mOnly{display:none!important}
+/* ===== 手機版:篩選收合、字小一點,表格在下方區域捲動,商品欄固定 ===== */
+@media (max-width:640px){
+ td{font-size:14px;padding:3px 6px}td.code{font-size:12px}th{font-size:12px;padding:4px 6px}
+ .top a{font-size:15px;padding:8px 10px}
+ .tools{gap:6px;padding:6px}
+ .mOnly{display:inline-block!important}
+ .tools>label:not(.keep),#colBtn,.tools .sp{display:none}
+ .tools.open>label,.tools.open #colBtn{display:inline-flex;align-items:center;gap:4px}
+ .tools .keep{flex:1;display:flex;align-items:center;gap:4px;white-space:nowrap}.tools .keep input{flex:1;min-width:0;width:100%}
+ #upd{flex-basis:100%;font-size:11px}#cnt{font-size:12px}
+ .rb{width:70px}
+}
+</style>
+</head>
+<body>
+<nav class="top">
+  <a href="cb-breakout.html">發債突破</a>
+  <a class="on" href="cb-quotes.html">可轉債</a>
+  <a href="cb-treasury.html">發債庫藏</a>
+</nav>
+<div class="tools" id="tools">
+  <button id="fBtn" class="mOnly" type="button">篩選 ▾</button>
+  <label class="keep">搜尋 <input id="q" placeholder="名稱 / 代碼 / 標的" size="14"></label>
+  <label><input type="checkbox" id="traded"> 只看有成交</label>
+  <label>產業 <select id="indSel"><option value="">全部</option></select></label>
+  <label>發行券商 <select id="uwSel"><option value="">全部</option></select></label>
+  <label>擔保 <select id="guar"><option value="">全部</option><option>是</option><option>否</option></select></label>
+  <button id="colBtn">欄位</button>
+  <label><input type="checkbox" id="auto" checked> 自動更新(30 秒)</label>
+  <span class="sp"></span>
+  <span id="cnt"></span>
+  <span id="upd"></span>
+</div>
+<div id="colbox"></div>
+<div class="wrap"><table><thead><tr id="h"></tr></thead><tbody id="b"></tbody></table></div>
+<script>
+// [key, 標題, 類型, 預設顯示]  類型: n=數字(2位) i=整數 p=漲跌色百分比 c=漲跌值 s=字串
+const COLS=[
+ ["name","商品","name",1],["code","代碼","code",1],["yst","昨收","n",1],["bid","買進","px",1],["ask","賣出","px",1],
+ ["deal","成交","px",0],["chg","漲跌","c",1],["chgPct","漲幅%","p",1],["vol","單量","vol",1],["ratio","內外盤比%","n",1],
+ ["ratioBar","內外盤比圖","bar",1],["totalVol","總量","i",1],["avg5","五日均量","i",1],["w1","一週%","p",1],["m1","一月%","p",1],
+ ["y1","一年%","p",1],["convPrice","轉換價格","n0",1],["convValue","轉換價值","n",1],["premium","轉換溢價率%","n",1],
+ ["convPct","已轉換比例%","n",1],["issued","發行張數","i",1],["guar","是否有擔保","s",1],["issueDate","發行日","s",1],
+ ["expiry","到期日","s",1],["remain","剩餘張數","i",1],["underwriter","發行券商","s",1],
+ ["stk","標的代碼","code",0],["stkName","標的名稱","sl",0],["stkPrice","標的股價","n",0],["ind","產業","sl",0],
+ ["stopConv","停止轉換","s",0],["time","時間","s",0]
+];
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let shown=store.get("cbq.cols",COLS.filter(c=>c[3]).map(c=>c[0]));
+if(!store.get("cbq.v2",0)){if(!shown.includes("underwriter"))shown.push("underwriter");store.set("cbq.cols",shown);store.set("cbq.v2",1)}
+let sk=store.get("cbq.sk","code"),dir=store.get("cbq.dir",1),DATA=null;
+
+const fmt=(v,d=2)=>v==null||v===""||Number.isNaN(v)?"--":(+v).toFixed(d);
+const fmtI=v=>v==null?"--":(+v).toLocaleString("en-US");
+const cls=v=>v==null?"":v>0?"up":v<0?"dn":"eq";
+function cell(r,[k,,t]){
+  const v=r[k];
+  switch(t){
+    case "name":return `<td class="l">${r.name}</td>`;
+    case "code":return `<td class="l code">${v||""}</td>`;
+    case "s":return `<td class="l">${v||"--"}</td>`;
+    case "sl":return `<td class="l">${v||"--"}</td>`;
+    case "n":return `<td>${fmt(v)}</td>`;
+    case "n0":return `<td>${v==null?"--":+v}</td>`;
+    case "i":return `<td>${fmtI(v)}</td>`;
+    case "px":return `<td class="${v&&r.yst?cls(v-r.yst):"mu"}">${v?fmt(v):"--"}</td>`;
+    case "c":return `<td class="${cls(v)}">${v==null?"--":(v>0?"▲":v<0?"▼":"")+fmt(Math.abs(v))}</td>`;
+    case "p":return `<td class="${cls(v)}">${v==null?"--":(v>0?"+":"")+fmt(v)}</td>`;
+    case "vol":return `<td class="${r.deal&&r.yst?cls(r.deal-r.yst):""}">${fmtI(v)}</td>`;
+    case "bar":return r.ratio==null?`<td><div class="rb"></div></td>`:`<td><div class="rb"><i class="n" style="width:${100-r.ratio}%"></i><i class="o" style="width:${r.ratio}%"></i></div></td>`;
+  }
+  return `<td>${v??""}</td>`;
+}
+function head(){
+  $("h").innerHTML=COLS.filter(c=>shown.includes(c[0])).map(([k,t,ty])=>
+    `<th data-k="${k}" class="${["name","code","s","sl"].includes(ty)?"l":""}">${t}${sk===k?`<span class="ar">${dir>0?"▲":"▼"}</span>`:""}</th>`).join("");
+  $("h").querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k==="ratioBar"?"ratio":th.dataset.k;dir=sk===k?-dir:(["name","code","issueDate","expiry","guar"].includes(k)?1:-1);sk=k;store.set("cbq.sk",sk);store.set("cbq.dir",dir);render()});
+}
+function render(){
+  head();
+  if(!DATA){$("b").innerHTML=`<tr><td class="empty" colspan="${shown.length}">尚無資料。請先執行 <code>python scripts\\cb_quotes.py</code> 產生 <code>data\\cb_quotes.js</code>,再重新整理。</td></tr>`;return}
+  fillSel("indSel",DATA.rows.map(r=>r.ind));fillSel("uwSel",DATA.rows.map(r=>r.underwriter));
+  const q=$("q").value.trim().toLowerCase(),tr=$("traded").checked,g=$("guar").value,is=$("indSel").value,us=$("uwSel").value;
+  const rows=DATA.rows.filter(r=>(!tr||r.totalVol>0)&&(!g||r.guar===g)&&(!is||(r.ind||"未分類")===is)&&(!us||(r.underwriter||"無")===us)&&(!q||[r.name,r.code,r.stk,r.stkName,r.ind].some(x=>(x||"").toLowerCase().includes(q))));
+  rows.sort((a,b)=>{const x=a[sk],y=b[sk];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return(x>y?1:x<y?-1:0)*dir});
+  const cols=COLS.filter(c=>shown.includes(c[0]));
+  $("b").innerHTML=rows.map(r=>`<tr title="標的 ${r.stk} ${r.stkName||""} ${r.stkPrice!=null?"股價 "+r.stkPrice:""}${r.stopConv?" ・停止轉換 "+r.stopConv:""}">${cols.map(c=>cell(r,c)).join("")}</tr>`).join("")||`<tr><td class="empty" colspan="${cols.length}">沒有符合條件的資料</td></tr>`;
+  $("cnt").textContent=`${rows.length} / ${DATA.rows.length} 檔`;
+  $("upd").innerHTML=`報價 <b>${DATA.updated}</b> ${mktState(DATA.updated)}・CBAS 轉換資料 <b>${(DATA.cbasTime||"").slice(0,16).replace("T"," ")}</b>`;
+}
+// 下拉選單:依資料自動產生選項(附檔數),保留目前選擇
+function fillSel(id,vals){
+  const el=$(id),cur=el.value,cnt={};
+  vals.forEach(v=>{v=(v||"").trim()||(id==="uwSel"?"無":"未分類");cnt[v]=(cnt[v]||0)+1});
+  const opts=Object.entries(cnt).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"zh-Hant"));
+  const sig=opts.map(o=>o.join(":")).join("|");if(el.dataset.sig===sig)return;el.dataset.sig=sig;
+  el.innerHTML=`<option value="">全部</option>`+opts.map(([v,n])=>`<option value="${v}">${v} (${n})</option>`).join("");
+  el.value=cnt[cur]?cur:"";
+}
+// 依資料時間判斷:盤中(週一~五 09:00~13:30 且是今天)才會持續更新
+function mktState(ts){
+  const d=new Date((ts||"").replace(" ","T"));if(isNaN(d))return "";
+  const n=new Date(),today=d.toDateString()===n.toDateString(),hm=d.getHours()*100+d.getMinutes(),wd=d.getDay();
+  const open=today&&wd>=1&&wd<=5&&hm>=900&&hm<=1330&&(n-d)<5*60e3;
+  return open?'<span style="color:var(--up)">● 盤中即時</span>':'<span class="mu">(已收盤／非盤中,盤中每 30 秒更新)</span>';
+}
+function cols(){
+  $("colbox").innerHTML=COLS.map(([k,t])=>`<label><input type="checkbox" value="${k}" ${shown.includes(k)?"checked":""}> ${t}</label>`).join("")+`<button id="colReset">還原預設</button>`;
+  $("colbox").querySelectorAll("input").forEach(i=>i.onchange=()=>{shown=[...$("colbox").querySelectorAll("input:checked")].map(x=>x.value);store.set("cbq.cols",shown);render()});
+  $("colReset").onclick=()=>{shown=COLS.filter(c=>c[3]).map(c=>c[0]);store.set("cbq.cols",shown);cols();render()};
+}
+function load(){
+  const s=document.createElement("script");
+  s.src="data/cb_quotes.js?t="+Date.now();
+  s.onload=()=>{if(window.CB_QUOTES){DATA=window.CB_QUOTES;render()}s.remove()};
+  s.onerror=()=>{s.remove();render()};
+  document.head.appendChild(s);
+}
+$("fBtn").onclick=()=>{const t=$("tools");t.classList.toggle("open");$("fBtn").textContent=t.classList.contains("open")?"篩選 ▴":"篩選 ▾"};
+$("colBtn").onclick=()=>{const b=$("colbox");b.style.display=b.style.display==="flex"?"none":"flex";if(b.style.display==="flex")cols()};
+["q"].forEach(i=>$(i).oninput=render);["traded","guar","indSel","uwSel"].forEach(i=>$(i).onchange=render);
+$("traded").checked=store.get("cbq.traded",false);$("traded").addEventListener("change",()=>store.set("cbq.traded",$("traded").checked));
+setInterval(()=>{if($("auto").checked)load()},30000);
+load();
+</script>
+</body>
+</html>
